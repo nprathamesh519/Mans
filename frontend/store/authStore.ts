@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 interface User {
   id: string;
@@ -19,12 +20,10 @@ interface AuthState {
   refreshToken: () => Promise<string | null>;
 }
 
-// Auto-refresh token whenever Firebase renews it
 onAuthStateChanged(auth, async (firebaseUser) => {
   if (firebaseUser) {
     const token = await firebaseUser.getIdToken(false);
     localStorage.setItem('token', token);
-    // Refresh every 50 minutes (token expires in 60)
     setInterval(async () => {
       const fresh = await firebaseUser.getIdToken(true);
       localStorage.setItem('token', fresh);
@@ -45,18 +44,19 @@ export const useAuthStore = create<AuthState>((set) => ({
     return token;
   },
 
+  // ✅ login function is properly placed here
   login: async (email, password) => {
     try {
       set({ isLoading: true });
+
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCred.user.getIdToken();
       localStorage.setItem('token', token);
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/users/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to fetch user profile');
+      // ✅ Read from Firestore directly — no Express fetch
+      const docSnap = await getDoc(doc(db, "users", userCred.user.uid));
+      if (!docSnap.exists()) throw new Error("User profile not found");
+      const data = docSnap.data();
 
       const user: User = {
         id: data.id,
@@ -65,8 +65,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         role: data.role || '',
         patientId: data.patientId || null
       };
+
       set({ isAuthenticated: true, user, isLoading: false });
       return user;
+
     } catch (err: any) {
       set({ isLoading: false });
       throw err;

@@ -1,3 +1,4 @@
+import { registerUser } from '../../backend/auth';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -5,8 +6,7 @@ import Button from '../components/ui/Button';
 import { ShieldCheckIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import { UserRole } from '../types';
 import { findPatient, linkPatient } from '../src/api/userApi';
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
+
 
 const CaretakerRegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,34 +24,8 @@ const CaretakerRegisterPage: React.FC = () => {
 
     try {
       // ✅ STEP 1: Register caretaker in backend
-      const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role: UserRole.CARETAKER
-        })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
-      // 🔥 STEP 2: LOGIN using Firebase (THIS WAS MISSING)
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-
-      const token = await userCred.user.getIdToken();
-
-      console.log("FIREBASE TOKEN:", token);
-
-      localStorage.setItem("token", token);
+       
+      await registerUser(email, password, { name, role: UserRole.CARETAKER });
 
       // ✅ STEP 3: Find patient
       const patient = await findPatient(patientCode.toUpperCase());

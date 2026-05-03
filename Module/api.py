@@ -182,6 +182,6 @@ if __name__ == "__main__":
     import sys
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 10000))
     print(f"Face Recognition API running on http://0.0.0.0:{port}")
     app.run(host="0.0.0.0", port=port, debug=False)

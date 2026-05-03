@@ -1,57 +1,31 @@
-import express from 'express';
-import { getAdminAuth, getAdminDb } from '../firebase.ts';
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
-const router = express.Router();
+export const registerUser = async (
+  email: string,
+  password: string,
+  extraData: any = {}
+) => {
+  // Create user in Firebase Auth directly — no Express needed
+  const userCred = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = userCred.user.uid;
 
-// ================= REGISTER =================
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, role, patientId, patientCode } = req.body;
+  const userData = {
+    id: uid,
+    email,
+    name: extraData.name || "",
+    role: extraData.role || "patient",
+    patientCode: extraData.patientCode || null,
+    patientId: extraData.patientId || null,
+    createdAt: new Date().toISOString(),
+  };
 
-    // 🔹 Create user using Firebase Admin
-    const userRecord = await getAdminAuth().createUser({
-      email,
-      password,
-      displayName: name
-    });
+  // Save to Firestore directly — no Express needed
+  await setDoc(doc(db, "users", uid), userData);
 
-    // 🔹 Save extra data in Firestore
-    const userData = {
-      id: userRecord.uid,
-      name,
-      email,
-      role,
-      patientId: patientId || null,
-      patientCode: patientCode || null,
-      createdAt: new Date().toISOString()
-    };
+  const token = await userCred.user.getIdToken();
+  localStorage.setItem("token", token);
 
-    await getAdminDb().collection('users').doc(userRecord.uid).set(userData);
-
-    // 🔹 Send success response (NO login here)
-    res.status(201).json({
-      message: "User registered successfully",
-      user: userData
-    });
-
-  } catch (err: any) {
-    console.error("REGISTER ERROR:", err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
-// ================= LOGIN =================
-// ⚠️ Login should be handled in FRONTEND using Firebase Client SDK
-router.post('/login', async (req, res) => {
-  try {
-    res.json({
-      message: "Login handled on frontend using Firebase Client SDK"
-    });
-  } catch (err: any) {
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({ message: err.message });
-  }
-});
-
-export default router;
+  return { user: userData };
+};
