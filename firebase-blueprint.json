@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "role": { "type": "string", "enum": ["patient", "caretaker"], "description": "User role" },
+        "patientId": { "type": "string", "description": "ID of the patient (for caretakers)" },
+        "patientCode": { "type": "string", "description": "Unique code for the patient" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Face": {
+      "title": "Face",
+      "description": "Recognized face profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "name": { "type": "string", "description": "Name of the person" },
+        "relation": { "type": "string", "description": "Relationship to the patient" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "URL to the face image" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this profile" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["name", "relation", "ownerId"]
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "Patient memory record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "title": { "type": "string", "description": "Title of the memory" },
+        "description": { "type": "string", "description": "Detailed description" },
+        "date": { "type": "string", "format": "date", "description": "Date of the memory" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "Optional image URL" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this memory" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "description", "date", "ownerId"]
+    },
+    "Reminder": {
+      "title": "Reminder",
+      "description": "Patient reminder or medication task",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "title": { "type": "string", "description": "Title of the reminder" },
+        "time": { "type": "string", "description": "Time for the reminder" },
+        "type": { "type": "string", "enum": ["medication", "activity", "appointment"], "description": "Type of reminder" },
+        "completed": { "type": "boolean", "description": "Status of the reminder" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this reminder" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["title", "time", "type", "ownerId"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "Safety alert or notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "type": { "type": "string", "enum": ["location", "fall", "emergency"], "description": "Type of alert" },
+        "message": { "type": "string", "description": "Alert message" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Alert timestamp" },
+        "read": { "type": "boolean", "description": "Whether the alert has been read" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this alert" }
+      },
+      "required": ["type", "message", "timestamp", "ownerId"]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Patient GPS location",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID of the patient" },
+        "lat": { "type": "number", "description": "Latitude" },
+        "lng": { "type": "number", "description": "Longitude" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["userId", "lat", "lng", "timestamp"]
+    },
+    "SafeZone": {
+      "title": "SafeZone",
+      "description": "Geofence safe zone",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID" },
+        "name": { "type": "string", "description": "Name of the zone" },
+        "lat": { "type": "number", "description": "Center latitude" },
+        "lng": { "type": "number", "description": "Center longitude" },
+        "radius": { "type": "number", "description": "Radius in meters" },
+        "ownerId": { "type": "string", "description": "UID of the user who owns this zone" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["name", "lat", "lng", "radius", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/faces/{faceId}": { "schema": "Face", "description": "Face profiles" },
+    "/memories/{memoryId}": { "schema": "Memory", "description": "Memory records" },
+    "/reminders/{reminderId}": { "schema": "Reminder", "description": "Reminders" },
+    "/alerts/{alertId}": { "schema": "Alert", "description": "Alerts" },
+    "/locations/{userId}": { "schema": "Location", "description": "Real-time locations" },
+    "/safeZones/{zoneId}": { "schema": "SafeZone", "description": "Safe zones" }
+  }
+}

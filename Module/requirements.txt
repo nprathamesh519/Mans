@@ -1,0 +1,7 @@
+mtcnn
+keras-facenet
+opencv-python
+numpy
+pickle-mixin
+flask
+flask-cors

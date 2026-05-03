@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Poppins', sans-serif;
+  --color-brand-primary: #6366F1;
+  --color-brand-secondary: #818CF8;
+  --color-brand-accent: #EC4899;
+  --color-brand-text: #334155;
+  --color-brand-text-light: #64748b;
+  --color-brand-primary-light: #C7D2FE;
+  --color-brand-background: #F9FAFB;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-danger: #EF4444;
+  --color-brand-warning: #F59E0B;
+  --color-brand-success: #10B981;
+}
+
+html { color-scheme: light; }
+body { font-family: 'Poppins', sans-serif; background-color: #F9FAFB; margin: 0; }
+.form-input {
+   margin-top: 0.25rem;
+   display: block;
+   width: 100%;
+   padding: 0.5rem 1rem;
+   background-color: white;
+   color: #334155;
+   border: 1px solid #d1d5db;
+   border-radius: 0.5rem;
+   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+   transition: all 0.2s ease;
+ }
+ .form-input:focus { outline: none; box-shadow: 0 0 0 2px #6366F1; border-color: transparent; }
+.glass-card {
+   background: rgba(255, 255, 255, 0.4);
+   backdrop-filter: blur(24px);
+   border: 1px solid rgba(255, 255, 255, 0.6);
+   border-radius: 2.5rem;
+}
+.pulse-animation { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
