@@ -6,7 +6,7 @@ import Button from '../components/ui/Button';
 import { ShieldCheckIcon, ArrowLeftIcon } from '../components/icons/Icons';
 import { useUserStore } from '../store/userStore';
 import { UserRole } from '../types';
-import { registerUser } from '../../backend/auth';
+import { registerUser } from '../lib/auth';
 
 const PatientRegisterPage: React.FC = () => {
   const navigate = useNavigate();

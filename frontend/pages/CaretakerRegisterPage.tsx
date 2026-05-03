@@ -1,4 +1,4 @@
-import { registerUser } from '../../backend/auth';
+import { registerUser } from '../lib/auth';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
