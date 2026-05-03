@@ -1,31 +1,47 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import express from 'express';
+import { getAdminAuth, getAdminDb } from '../firebase.ts';
 
-export const registerUser = async (
-  email: string,
-  password: string,
-  extraData: any = {}
-) => {
-  // Create user in Firebase Auth directly — no Express needed
-  const userCred = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = userCred.user.uid;
+const router = express.Router();
 
-  const userData = {
-    id: uid,
-    email,
-    name: extraData.name || "",
-    role: extraData.role || "patient",
-    patientCode: extraData.patientCode || null,
-    patientId: extraData.patientId || null,
-    createdAt: new Date().toISOString(),
-  };
+// ================= REGISTER =================
+router.post('/register', async (req, res) => {
+  try {
+    const { name, email, password, role, patientId, patientCode } = req.body;
 
-  // Save to Firestore directly — no Express needed
-  await setDoc(doc(db, "users", uid), userData);
+    const userRecord = await getAdminAuth().createUser({
+      email,
+      password,
+      displayName: name
+    });
 
-  const token = await userCred.user.getIdToken();
-  localStorage.setItem("token", token);
+    const userData = {
+      id: userRecord.uid,
+      name,
+      email,
+      role,
+      patientId: patientId || null,
+      patientCode: patientCode || null,
+      createdAt: new Date().toISOString()
+    };
 
-  return { user: userData };
-};
+    await getAdminDb().collection('users').doc(userRecord.uid).set(userData);
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: userData
+    });
+
+  } catch (err: any) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ================= LOGIN =================
+router.post('/login', async (req, res) => {
+  res.json({
+    message: "Login handled on frontend using Firebase Client SDK"
+  });
+});
+
+export default router;
