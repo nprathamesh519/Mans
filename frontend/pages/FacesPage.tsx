@@ -9,6 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { speak } from '../utils/helpers';
 import { autoSyncFaces } from './AddFacePage';
 
+// Helper to get the face API URL from environment or fallback
+const getFaceApiUrl = () => import.meta.env.VITE_FACE_API_URL || 'http://localhost:5001';
+
 interface EditFaceState {
   id: string;
   name: string;
@@ -64,7 +67,7 @@ const PatientFacesView = () => {
         canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
         const base64Image = canvas.toDataURL('image/jpeg', 0.8);
         try {
-            const faceApiUrl = import.meta.env.VITE_FACE_API_URL || 'http://localhost:5001';
+            const faceApiUrl = getFaceApiUrl();
             const res = await fetch(`${faceApiUrl}/recognize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -129,7 +132,7 @@ const PatientFacesView = () => {
         const base64Image = canvas.toDataURL('image/jpeg', 0.8);
 
         try {
-            const faceApiUrl = import.meta.env.VITE_FACE_API_URL || 'http://localhost:5001';
+            const faceApiUrl = getFaceApiUrl();
             const res = await fetch(`${faceApiUrl}/recognize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -279,7 +282,7 @@ const CaretakerFacesView = () => {
     const handleSync = async () => {
         setSyncing(true);
         try {
-            const faceApiUrl = import.meta.env.VITE_FACE_API_URL || 'http://localhost:5001';
+            const faceApiUrl = getFaceApiUrl();
             const res = await fetch(`${faceApiUrl}/sync`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
