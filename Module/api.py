@@ -5,9 +5,11 @@ import numpy as np
 import pickle
 import os
 import base64
-from mtcnn import MTCNN
-from keras_facenet import FaceNet
 from numpy.linalg import norm
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 
 app = Flask(__name__)
 CORS(app)
@@ -15,10 +17,29 @@ CORS(app)
 EMBED_PATH = os.path.join(os.path.dirname(__file__), "embeddings", "data.pkl")
 os.makedirs(os.path.dirname(EMBED_PATH), exist_ok=True)
 
-detector = MTCNN()
-embedder = FaceNet()
+# ── Lazy load models (saves memory on startup) ────────────────────────────────
+_detector = None
+_embedder = None
 
-# ── Load existing embeddings ──────────────────────────────────────────────────
+def get_detector():
+    global _detector
+    if _detector is None:
+        print("Loading MTCNN...", flush=True)
+        from mtcnn import MTCNN
+        _detector = MTCNN()
+        print("MTCNN loaded", flush=True)
+    return _detector
+
+def get_embedder():
+    global _embedder
+    if _embedder is None:
+        print("Loading FaceNet...", flush=True)
+        from keras_facenet import FaceNet
+        _embedder = FaceNet()
+        print("FaceNet loaded", flush=True)
+    return _embedder
+
+# ── DB helpers ────────────────────────────────────────────────────────────────
 def load_db():
     if os.path.exists(EMBED_PATH):
         with open(EMBED_PATH, "rb") as f:
@@ -33,7 +54,6 @@ def cosine_similarity(a, b):
     return np.dot(a, b) / (norm(a) * norm(b))
 
 def base64_to_rgb(b64_string):
-    # Strip data URI prefix if present
     if "," in b64_string:
         b64_string = b64_string.split(",")[1]
     img_bytes = base64.b64decode(b64_string)
@@ -42,7 +62,7 @@ def base64_to_rgb(b64_string):
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
 def extract_embedding(rgb_image):
-    results = detector.detect_faces(rgb_image)
+    results = get_detector().detect_faces(rgb_image)
     if not results:
         return None
     x, y, w, h = results[0]["box"]
@@ -52,17 +72,21 @@ def extract_embedding(rgb_image):
         return None
     face = cv2.resize(face, (160, 160))
     face = np.expand_dims(face, axis=0)
-    return embedder.embeddings(face)[0]
+    return get_embedder().embeddings(face)[0]
+
+
+# ── GET /health ───────────────────────────────────────────────────────────────
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"})
 
 
 # ── POST /register ────────────────────────────────────────────────────────────
-# Called when caretaker adds a face photo
-# Body: { name, relation, image (base64) }
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
-    name     = data.get("name", "").strip()
-    relation = data.get("relation", "").strip()
+    name      = data.get("name", "").strip()
+    relation  = data.get("relation", "").strip()
     image_b64 = data.get("image", "")
 
     if not name or not image_b64:
@@ -71,30 +95,22 @@ def register():
     try:
         rgb = base64_to_rgb(image_b64)
         emb = extract_embedding(rgb)
-
         if emb is None:
             return jsonify({"success": False, "message": "No face detected in the image"}), 400
 
         database, relations = load_db()
-
-        # Average with existing embedding if person already registered
         if name in database:
             database[name] = (database[name] + emb) / 2
         else:
             database[name] = emb
-
         relations[name] = relation
         save_db(database, relations)
-
         return jsonify({"success": True, "message": f"{name} registered successfully"})
-
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
 
 # ── POST /recognize ───────────────────────────────────────────────────────────
-# Called when patient opens camera and scans a face
-# Body: { image (base64) }
 @app.route("/recognize", methods=["POST"])
 def recognize():
     data = request.json
@@ -106,17 +122,15 @@ def recognize():
     try:
         rgb = base64_to_rgb(image_b64)
         emb = extract_embedding(rgb)
-
         if emb is None:
             return jsonify({"success": True, "name": "Unknown", "relation": "", "score": 0})
 
         database, relations = load_db()
-
         if not database:
             return jsonify({"success": True, "name": "Unknown", "relation": "", "score": 0})
 
         best_name  = "Unknown"
-        best_score = 0.5  # threshold — same as Python module
+        best_score = 0.5
 
         for db_name, db_emb in database.items():
             score = cosine_similarity(emb, db_emb)
@@ -125,21 +139,17 @@ def recognize():
                 best_name  = db_name
 
         relation = relations.get(best_name, "") if best_name != "Unknown" else ""
-
         return jsonify({
             "success": True,
             "name": best_name,
             "relation": relation,
             "score": float(best_score)
         })
-
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ── POST /sync ───────────────────────────────────────────────────────────────
-# Re-registers all faces from Firestore in one call
-# Body: { faces: [{ name, relation, image (base64) }] }
+# ── POST /sync ────────────────────────────────────────────────────────────────
 @app.route("/sync", methods=["POST"])
 def sync():
     data = request.json
@@ -172,16 +182,8 @@ def sync():
     return jsonify({"success": True, "results": results})
 
 
-# ── GET /health ───────────────────────────────────────────────────────────────
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"})
-
-
+# ── Start ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    import sys
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
     port = int(os.environ.get("PORT", 10000))
-    print(f"Face Recognition API running on http://0.0.0.0:{port}")
+    print(f"Starting on port {port}", flush=True)
     app.run(host="0.0.0.0", port=port, debug=False)
