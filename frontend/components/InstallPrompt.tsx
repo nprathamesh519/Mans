@@ -71,7 +71,7 @@ const InstallPrompt: React.FC = () => {
               <div className="flex justify-center -mt-14 mb-3">
                 <img
                   src="/icons/icon-192.png"
-                  alt="NaariCare"
+                  alt="Lucidia"
                   width={72}
                   height={72}
                   className="rounded-2xl shadow-lg ring-4 ring-white"
@@ -79,7 +79,7 @@ const InstallPrompt: React.FC = () => {
               </div>
 
               <h2 id="install-title" className="text-center text-xl font-bold text-gray-900">
-                Install NaariCare
+                Install Lucidia
               </h2>
               <p className="text-center text-sm text-gray-500 mt-1">
                 Get faster access, offline support &amp; better experience
