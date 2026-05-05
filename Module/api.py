@@ -12,7 +12,22 @@ sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    resources={r"/*": {"origins": [
+        "https://mans-oarw.vercel.app",
+        "http://localhost:5173"
+    ]}},
+    supports_credentials=True
+)
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', request.headers.get('Origin', '*'))
+    
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,DELETE')
+    return response
 
 EMBED_PATH = os.path.join(os.path.dirname(__file__), "embeddings", "data.pkl")
 os.makedirs(os.path.dirname(EMBED_PATH), exist_ok=True)
@@ -180,7 +195,9 @@ def sync():
 
     save_db(database, relations)
     return jsonify({"success": True, "results": results})
-
+@app.route('/<path:path>', methods=["OPTIONS"])
+def options_handler(path):
+    return '', 200
 
 # ── Start ─────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
